@@ -3,7 +3,8 @@ package books
 import (
 	"database/sql"
 	"net/http"
-	"routing_with_tpl_v_organize/config"
+
+	"github.com/GoesToEleven/golang-web-dev/045-code-organization/03_multiple-packages/config"
 )
 
 func Index(w http.ResponseWriter, r *http.Request) {

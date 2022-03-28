@@ -3,8 +3,9 @@ package books
 import (
 	"errors"
 	"net/http"
-	"routing_with_tpl_v_organize/config"
 	"strconv"
+
+	"github.com/GoesToEleven/golang-web-dev/045-code-organization/03_multiple-packages/config"
 )
 
 // export fields to templates
