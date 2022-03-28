@@ -1,9 +1,9 @@
 package books
 
 import (
-	"/Users/boramat/git/go-projects/routing_with_tpl_v_organize/config"
 	"errors"
 	"net/http"
+	"routing_with_tpl_v_organize/config"
 	"strconv"
 )
 

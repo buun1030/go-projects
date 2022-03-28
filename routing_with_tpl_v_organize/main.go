@@ -2,7 +2,7 @@ package main
 
 import (
 	"net/http"
-	"~/git/go-projects/routing_with_tpl_v_organize/books"
+	"routing_with_tpl_v_organize/books"
 )
 
 func main() {

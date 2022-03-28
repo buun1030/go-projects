@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"net/http"
 
-	"/Users/boramat/git/go-projects/routing_with_tpl_v_organize/config"
+	"routing_with_tpl_v_organize/config"
 )
 
 func Index(w http.ResponseWriter, r *http.Request) {
