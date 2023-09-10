@@ -45,3 +45,9 @@ Because it was difficult to distinguish the expected execution flow because of t
 * If the receiver is a slice that doesn’t have to be mutated.
 * If the receiver is a small array or struct that is naturally a value type without mutable fields, such as `time.Time`.
 * If the receiver is a basic type such as `int`, `float64`, or `string`.
+
+## The standard library
+
+## Not using testing utility packages
+
+## Not exploring all the go testing features
