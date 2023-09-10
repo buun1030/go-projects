@@ -11,7 +11,7 @@ after prcess the inner block, the outer block variable will stay the same.\
 
 Because it was difficult to distinguish the expected execution flow because of the nested if/else statements. Conversely, if only one nested if/else statment, it requires scanning down one column to see the expected execution flow and down the second column to see how the edge cases are handled.\
 \
-![This is an alt text.](https://drek4537l1klr.cloudfront.net/harsanyi/Figures/CH02_F01_Harsanyi.png "To understand the expected execution flow, we just have to scan the happy path column.")\
+![This is an alt text.](![Alt text](image-1.png) "To understand the expected execution flow, we just have to scan the happy path column.")\
 \
 **Solution:** Striving to reduce the number of nested blocks, aligning the happy path on the left, and returning as early as possible are concrete means to improve our code’s readability.
 
@@ -91,7 +91,7 @@ if err != nil {
 }
 ```
 
-But this isn’t necessarily the case. According to the documentation (https://pkg.go.dev/database/sql),\
+But this isn’t necessarily the case. According to the documentation (https://pkg.go.dev/database/sql),
 \
 *Open may just validate its arguments without creating a connection to the database.*\
 \
@@ -119,12 +119,12 @@ Despite being perhaps counterintuitive, let’s remember that sql.Open doesn’t
 
 ### Forgetting about connections pooling
 
-Just as the default HTTP client and server provide default behaviors that may not be effective in production (see mistake #81, “Using the default HTTP client and server”), it’s essential to understand how database connections are handled in Go. sql.Open returns an *sql.DB struct. This struct doesn’t represent a single database connection; instead, it represents a pool of connections. This is worth noting so we’re not tempted to implement it manually. A connection in the pool can have two states:\
+Just as the default HTTP client and server provide default behaviors that may not be effective in production (see mistake #81, “Using the default HTTP client and server”), it’s essential to understand how database connections are handled in Go. sql.Open returns an *sql.DB struct. This struct doesn’t represent a single database connection; instead, it represents a pool of connections. This is worth noting so we’re not tempted to implement it manually. A connection in the pool can have two states:
 
-* Already used (for example, by another goroutine that triggers a query)\
+* Already used (for example, by another goroutine that triggers a query)
 * Idle (already created but not in use for the time being)
 
-It’s also important to remember that creating a pool leads to four available config parameters that we may want to override. Each of these parameters is an exported method of `*sql.DB`:\
+It’s also important to remember that creating a pool leads to four available config parameters that we may want to override. Each of these parameters is an exported method of `*sql.DB`:
 
 * SetMaxOpenConns—Maximum number of open connections to the database (default value: unlimited)
 * SetMaxIdleConns—Maximum number of idle connections (default value: 2)
@@ -137,7 +137,7 @@ Figure shows an example with a maximum of five connections. It has four ongoing 
 \
 Figure: A connection pool with five connections\
 \
-So, why should we tweak these config parameters?\
+So, why should we tweak these config parameters?
 
 * Setting SetMaxOpenConns is important for production-grade applications. Because the default value is unlimited, we should set it to make sure it fits what the underlying database can handle.
 * The value of SetMaxIdleConns (default: 2) should be increased if our application generates a significant number of concurrent requests. Otherwise, the application may experience frequent reconnects.
