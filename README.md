@@ -1,1 +1,1 @@
-# go-projects
+# go-mistakes
