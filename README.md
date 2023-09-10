@@ -76,6 +76,105 @@ if err != nil {
 
 If we use a map of any: any numeric value, regardless of whether it contains a decimal, is converted into a float64 type.
 
+## Common SQL mistakes
+
+The `database/sql` package provides a generic interface around SQL (or SQL-like) databases. It’s also fairly common to see some patterns or mistakes while using this package. Let’s delve into five common mistakes.
+
+###  Forgetting that sql.Open doesn’t necessarily establish connections to a database
+
+When using sql.Open, one common misconception is expecting this function to establish connections to a database:
+
+```
+db, err := sql.Open("mysql", dsn)
+if err != nil {
+    return err
+}
+```
+
+But this isn’t necessarily the case. According to the documentation (https://pkg.go.dev/database/sql),\
+\
+*Open may just validate its arguments without creating a connection to the database.*\
+\
+Actually, the behavior depends on the SQL driver used. For some drivers, sql.Open doesn’t establish a connection: it’s only a preparation for later use (for example, with db.Query). Therefore, the first connection to the database may be established lazily.\
+\
+Why do we need to know about this behavior? For example, in some cases, we want to make a service ready only after we know that all the dependencies are correctly set up and reachable. If we don’t know this, the service may accept traffic despite an erroneous configuration.\
+\
+If we want to ensure that the function that uses sql.Open also guarantees that the underlying database is reachable, we should use the Ping method:
+
+```
+db, err := sql.Open("mysql", dsn)
+if err != nil {
+    return err
+}
+if err := db.Ping(); err != nil {     ❶
+    return err
+}
+```
+
+❶ Calls the Ping method following sql.Open\
+\
+Ping forces the code to establish a connection that ensures that the data source name is valid and the database is reachable. Note that an alternative to Ping is PingContext, which asks for an additional context conveying when the ping should be canceled or time out.\
+\
+Despite being perhaps counterintuitive, let’s remember that sql.Open doesn’t necessarily establish a connection, and the first connection can be opened lazily. If we want to test our configuration and be sure a database is reachable, we should follow sql.Open with a call to the Ping or PingContext method.
+
+### Forgetting about connections pooling
+
+Just as the default HTTP client and server provide default behaviors that may not be effective in production (see mistake #81, “Using the default HTTP client and server”), it’s essential to understand how database connections are handled in Go. sql.Open returns an *sql.DB struct. This struct doesn’t represent a single database connection; instead, it represents a pool of connections. This is worth noting so we’re not tempted to implement it manually. A connection in the pool can have two states:\
+
+* Already used (for example, by another goroutine that triggers a query)\
+* Idle (already created but not in use for the time being)
+
+It’s also important to remember that creating a pool leads to four available config parameters that we may want to override. Each of these parameters is an exported method of `*sql.DB`:\
+
+* SetMaxOpenConns—Maximum number of open connections to the database (default value: unlimited)
+* SetMaxIdleConns—Maximum number of idle connections (default value: 2)
+* SetConnMaxIdleTime—Maximum amount of time a connection can be idle before it’s closed (default value: unlimited)
+* SetConnMaxLifetime—Maximum amount of time a connection can be held open before it’s closed (default value: unlimited)
+
+Figure shows an example with a maximum of five connections. It has four ongoing connections: three idle and one in use. Therefore, one slot remains available for an extra connection. If a new query comes in, it will pick one of the idle connections (if still available). If there are no more idle connections, the pool will create a new connection if an extra slot is available; otherwise, it will wait until a connection is available.\
+\
+![Alt text](image.png)\
+\
+Figure: A connection pool with five connections\
+\
+So, why should we tweak these config parameters?\
+
+* Setting SetMaxOpenConns is important for production-grade applications. Because the default value is unlimited, we should set it to make sure it fits what the underlying database can handle.
+* The value of SetMaxIdleConns (default: 2) should be increased if our application generates a significant number of concurrent requests. Otherwise, the application may experience frequent reconnects.
+* Setting SetConnMaxIdleTime is important if our application may face a burst of requests. When the application returns to a more peaceful state, we want to make sure the connections created are eventually released.
+* Setting SetConnMaxLifetime can be helpful if, for example, we connect to a load-balanced database server. In that case, we want to ensure that our application never uses a connection for too long.
+
+For production-grade applications, we must consider these four parameters. We can also use multiple connection pools if an application faces different use cases.
+
+### Not using prepared statements
+
+A prepared statement is a feature implemented by many SQL databases to execute a repeated SQL statement. Internally, the SQL statement is precompiled and separated from the data provided. There are two main benefits:
+
+* Efficiency—The statement doesn’t have to be recompiled (compilation means parsing + optimization + translation).
+* Security—This approach reduces the risks of SQL injection attacks.
+
+Therefore, if a statement is repeated, we should use prepared statements. We should also use prepared statements in untrusted contexts (such as exposing an endpoint on the internet, where the request is mapped to an SQL statement).\
+\
+To use prepared statements, instead of calling the Query method of *sql.DB, we call Prepare:
+
+```
+stmt, err := db.Prepare("SELECT * FROM ORDER WHERE ID = ?")   ❶
+if err != nil {
+    return err
+}
+rows, err := stmt.Query(id)                                   ❷
+// ...
+```
+
+❶ Prepares the statement\
+\
+❷ Executes the prepared query\
+\
+We prepare the statement and then execute it while providing the arguments. The first output of the Prepare method is an *sql.Stmt, which can be reused and run concurrently. When the statement is no longer needed, it must be closed using the Close() method.\
+\
+**NOTE** The Prepare and Query methods have alternatives to provide an additional context: PrepareContext and QueryContext.\
+\
+For efficiency and security, we need to remember to use prepared statements when it makes sense.
 ## Not closing transient resources
 
 ## Forgetting the return statement after replying to an HTTP request
