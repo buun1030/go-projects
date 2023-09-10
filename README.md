@@ -3,25 +3,23 @@
 ## Unintended variable shadowing
 
 Declares outer block variable and then redeclare the same name variable in an inner block,
-after prcess the inner block, the outer block variable will stay the same.
+after prcess the inner block, the outer block variable will stay the same.\
 \
 **Solution:** To assign value to the outer block variable in the inner block, just use `=` not `:=`
 
 ## Unnecessary nested code
 
-Because it was difficult to distinguish the expected execution flow because of the nested if/else statements. Conversely, if only one nested if/else statment, it requires scanning down one column to see the expected execution flow and down the second column to see how the edge cases are handled.
+Because it was difficult to distinguish the expected execution flow because of the nested if/else statements. Conversely, if only one nested if/else statment, it requires scanning down one column to see the expected execution flow and down the second column to see how the edge cases are handled.\
 \
-\
-![This is an alt text.](https://drek4537l1klr.cloudfront.net/harsanyi/Figures/CH02_F01_Harsanyi.png "To understand the expected execution flow, we just have to scan the happy path column.")
-\
+![This is an alt text.](https://drek4537l1klr.cloudfront.net/harsanyi/Figures/CH02_F01_Harsanyi.png "To understand the expected execution flow, we just have to scan the happy path column.")\
 \
 **Solution:** Striving to reduce the number of nested blocks, aligning the happy path on the left, and returning as early as possible are concrete means to improve our code’s readability.
 
 ## Interface on the producer side
 
-*abstractions should be discovered, not created.* This means that it’s not up to the producer to force a given abstraction for all the clients. Instead, it’s up to the client to decide whether it needs some form of abstraction and then determine the best abstraction level for its needs.
+*abstractions should be discovered, not created.* This means that it’s not up to the producer to force a given abstraction for all the clients. Instead, it’s up to the client to decide whether it needs some form of abstraction and then determine the best abstraction level for its needs.\
 \
-`time.Time` field contain monotonic time An interface should live on the consumer side in most cases. However, in particular contexts (for example, when we know—not foresee—that an abstraction will be helpful for consumers), we may want to have it on the producer side. If we do, we should strive to keep it as minimal as possible, increasing its reusability potential and making it more easily composable.
+`time.Time` field contain monotonic time An interface should live on the consumer side in most cases. However, in particular contexts (for example, when we know—not foresee—that an abstraction will be helpful for consumers), we may want to have it on the producer side. If we do, we should strive to keep it as minimal as possible, increasing its reusability potential and making it more easily composable.\
 \
 **Note:** The interface in Go is satisfied implicitly while some is an explicit implementation which have to declare that a particular class or type explicitly implements a specific interface and cannot do like solution above.
 
@@ -61,7 +59,7 @@ Because it was difficult to distinguish the expected execution flow because of t
              Wall time               Monotonic time
 ```
 
-When marshal `time.Time` field contain monotonic time while unmarshal `time.Time` field doesn't contain monotonic time. The marshaling/unmarshaling process isn’t always symmetric, and we faced this case with a struct containing a time.Time.
+When marshal `time.Time` field contain monotonic time while unmarshal `time.Time` field doesn't contain monotonic time. The marshaling/unmarshaling process isn’t always symmetric, and we faced this case with a struct containing a time.Time.\
 \
 **Solution:** Use the `Equal` method instead of `==` or stay `==` but use `Truncate` method to time before marshal.
 
@@ -90,8 +88,8 @@ Unaware of these packages and trying to reinvent the wheel or rely on other solu
 
 ### The httptest package
 
-The [httptest](https://pkg.go.dev/net/http/httptest) package provides utilities for HTTP testing for both clients and servers. Let’s look at these two use cases.
-
+The [httptest](https://pkg.go.dev/net/http/httptest) package provides utilities for HTTP testing for both clients and servers. Let’s look at these two use cases.\
+\
 First, let’s see how `httptest` can help us while writing an HTTP server. We will implement a handler that performs some basic actions: writing a header and body, and returning a specific status code. For the sake of clarity, we will omit error handling:
 
 ```
@@ -103,7 +101,7 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 }
 ```
 
-❶ Concatenates hello with the request body
+❶ Concatenates hello with the request body\
 \
 An HTTP handler accepts two arguments: the request and a way to write the response. The `httptest` package provides utilities for both. For the request, we can use `httptest.NewRequest` to build an `*http.Request` using an HTTP method, a URL, and a body. For the response, we can use `httptest.NewRecorder` to record the mutations made within the handler. Let’s write a unit test of this handler:
 
@@ -129,19 +127,19 @@ func TestHandler(t *testing.T) {
 }
 ```
 
-❶ Builds the request
+❶ Builds the request\
 \
-❷ Creates the response recorder
+❷ Creates the response recorder\
 \
-❸ Calls the handler
+❸ Calls the handler\
 \
-❹ Verifies the HTTP header
+❹ Verifies the HTTP header\
 \
-❺ Verifies the HTTP body
+❺ Verifies the HTTP body\
 \
-❻ Verifies the HTTP status code
+❻ Verifies the HTTP status code\
 \
-Testing a handler using `httptest` doesn’t test the transport (the HTTP part). The focus of the test is calling the handler directly with a request and a way to record the response. Then, using the response recorder, we write the assertions to verify the HTTP header, body, and status code.
+Testing a handler using `httptest` doesn’t test the transport (the HTTP part). The focus of the test is calling the handler directly with a request and a way to record the response. Then, using the response recorder, we write the assertions to verify the HTTP header, body, and status code.\
 \
 Let’s look at the other side of the coin: testing an HTTP client. We will write a client in charge to query an HTTP endpoint that calculates how long it takes to drive from one coordinate to another. The client looks like this:
 
@@ -161,7 +159,7 @@ func (c DurationClient) GetDuration(url string,
 }
 ```
 
-This code performs an HTTP POST request to the provided URL and returns the parsed response (let’s say, some JSON).
+This code performs an HTTP POST request to the provided URL and returns the parsed response (let’s say, some JSON).\
 \
 What if we want to test this client? One option is to use Docker and spin up a mock server to return some preregistered responses. However, this approach makes the test slow to execute. The other option is to use httptest.NewServer to create a local HTTP server based on a handler that we will provide. Once the server is up and running, we can pass its URL to `GetDuration`:
 
@@ -189,27 +187,27 @@ func TestDurationClientGet(t *testing.T) {
 }
 ```
 
-❶ Starts the HTTP server
+❶ Starts the HTTP server\
 \
-❷ Registers the handler to serve the response
+❷ Registers the handler to serve the response\
 \
-❸ Shuts down the server
+❸ Shuts down the server\
 \
-❹ Provides the server URL
+❹ Provides the server URL\
 \
-❺ Verifies the response
+❺ Verifies the response\
 \
-In this test, we create a server with a static handler returning `314` seconds. We could also make assertions based on the request sent. Furthermore, when we call `GetDuration`, we provide the URL of the server that’s started. Compared to testing a handler, this test performs an actual HTTP call, but it executes in only a few milliseconds.
+In this test, we create a server with a static handler returning `314` seconds. We could also make assertions based on the request sent. Furthermore, when we call `GetDuration`, we provide the URL of the server that’s started. Compared to testing a handler, this test performs an actual HTTP call, but it executes in only a few milliseconds.\
 \
-We can also start a new server using TLS with `httptest.NewTLSServer` and create an unstarted server with `httptest.NewUnstartedServer` so that we can start it lazily.
+We can also start a new server using TLS with `httptest.NewTLSServer` and create an unstarted server with `httptest.NewUnstartedServer` so that we can start it lazily.\
 \
 Let’s remember how helpful `httptest` is when working in the context of HTTP applications. Whether we’re writing a server or a client, `httptest` can help us create efficient tests.
 
 ### The iotest package
 
-The [iotest](https://pkg.go.dev/testing/iotest) package implements utilities for testing readers and writers. It’s a convenient package that Go developers too often forget.
+The [iotest](https://pkg.go.dev/testing/iotest) package implements utilities for testing readers and writers. It’s a convenient package that Go developers too often forget.\
 \
-When implementing a custom `io.Reader`, we should remember to test it using `iotest.TestReader`. This utility function tests that a reader behaves correctly: it accurately returns the number of bytes read, fills the provided slice, and so on. It also tests different behaviors if the provided reader implements interfaces such as `io.ReaderAt`.
+When implementing a custom `io.Reader`, we should remember to test it using `iotest.TestReader`. This utility function tests that a reader behaves correctly: it accurately returns the number of bytes read, fills the provided slice, and so on. It also tests different behaviors if the provided reader implements interfaces such as `io.ReaderAt`.\
 \
 Let’s assume we have a custom `LowerCaseReader` that streams lowercase letters from a given input `io.Reader`. Here’s how to test that this reader doesn’t misbehave:
 
@@ -225,11 +223,11 @@ func TestLowerCaseReader(t *testing.T) {
 }
 ```
 
-❶ Provides an io.Reader
+❶ Provides an io.Reader\
 \
-❷ Expectation
+❷ Expectation\
 \
-We call `iotest.TestReader` by providing the custom `LowerCaseReader` and an expectation: the lowercase letters `acegi`.
+We call `iotest.TestReader` by providing the custom `LowerCaseReader` and an expectation: the lowercase letters `acegi`.\
 \
 Another use case for the `iotest` package is to make sure an application using readers and writers is tolerant to errors:
 
@@ -265,9 +263,9 @@ func TestFoo(t *testing.T) {
 }
 ```
 
-❶ Wraps the provided io.Reader using io.TimeoutReader
+❶ Wraps the provided io.Reader using io.TimeoutReader\
 \
-We wrap an `io.Reader` using `io.TimeoutReader`. As we mentioned, the second read will fail. If we run this test to make sure our function is tolerant to error, we get a test failure. Indeed, `io.ReadAll` returns any errors it finds.
+We wrap an `io.Reader` using `io.TimeoutReader`. As we mentioned, the second read will fail. If we run this test to make sure our function is tolerant to error, we get a test failure. Indeed, `io.ReadAll` returns any errors it finds.\
 \
 Knowing this, we can implement our custom `readAll` function that tolerates up to n errors:
 
@@ -293,7 +291,7 @@ func readAll(r io.Reader, retries int) ([]byte, error) {
 }
 ```
 
-❶ Tolerates retries
+❶ Tolerates retries\
 \
 This implementation is similar to `io.ReadAll`, but it also handles configurable retries. If we change the implementation of our initial function to use our custom `readAll` instead of `io.ReadAll`, the test will no longer fail:
 
@@ -308,9 +306,9 @@ func foo(r io.Reader) error {
 }
 ```
 
-❶ Indicates up to three retries
+❶ Indicates up to three retries\
 \
-We have seen an example of how to check that a function is tolerant to errors while reading from an `io.Reader`. We performed the test by relying on the `iotest` package.
+We have seen an example of how to check that a function is tolerant to errors while reading from an `io.Reader`. We performed the test by relying on the `iotest` package.\
 \
 When doing I/O and working with `io.Reader` and `io.Writer`, let’s remember how handy the `iotest` package is. As we have seen, it provides utilities to test the behavior of a custom `io.Reader` and test our application against errors that occur while reading or writing data.
 
@@ -320,15 +318,15 @@ When it comes to writing tests, developers should know about Go’s specific tes
 
 ### Code coverage
 
-During the development process, it can be handy to see visually which parts of our code are covered by tests. We can access this information using the `-coverprofile` flag:
+During the development process, it can be handy to see visually which parts of our code are covered by tests. We can access this information using the `-coverprofile` flag:\
 \
-`$ go test -coverprofile=coverage.out ./...`
+`$ go test -coverprofile=coverage.out ./...`\
 \
-This command creates a coverage.out file that we can then open using `go tool cover`:
+This command creates a coverage.out file that we can then open using `go tool cover`:\
 \
-`$ go tool cover -html=coverage.out`
+`$ go tool cover -html=coverage.out`\
 \
-This command opens the web browser and shows the coverage for each line of code.
+This command opens the web browser and shows the coverage for each line of code.\
 \
 By default, the code coverage is analyzed only for the current package being tested. For example, suppose we have the following structure:
 
@@ -342,17 +340,17 @@ By default, the code coverage is analyzed only for the current package being tes
     |_ bar_test.go
 ```
 
-If some portion of foo.go is only tested in bar_test.go, by default, it won’t be shown in the coverage report. To include it, we have to be in the `myapp` folder and use the `-coverpkg` flag:
+If some portion of foo.go is only tested in bar_test.go, by default, it won’t be shown in the coverage report. To include it, we have to be in the `myapp` folder and use the `-coverpkg` flag:\
 \
-`go test -coverpkg=./... -coverprofile=coverage.out ./...`
+`go test -coverpkg=./... -coverprofile=coverage.out ./...`\
 \
-We need to remember this feature to see the current code coverage and decide which parts deserve more tests.
+We need to remember this feature to see the current code coverage and decide which parts deserve more tests.\
 \
 **NOTE** Remain cautious when it comes to chasing code coverage. Having 100% test coverage doesn’t imply a bug-free application. Properly reasoning about what our tests cover is more important than any static threshold.
 
 ### Testing from a different package
 
-When writing unit tests, one approach is to focus on behaviors instead of internals. Suppose we expose an API to clients. We may want our tests to focus on what’s visible from the outside, not the implementation details. This way, if the implementation changes (for example, if we refactor one function into two), the tests will remain the same. They can also be easier to understand because they show how our API is used. If we want to enforce this practice, we can do so using a different package.
+When writing unit tests, one approach is to focus on behaviors instead of internals. Suppose we expose an API to clients. We may want our tests to focus on what’s visible from the outside, not the implementation details. This way, if the implementation changes (for example, if we refactor one function into two), the tests will remain the same. They can also be easier to understand because they show how our API is used. If we want to enforce this practice, we can do so using a different package.\
 \
 In Go, all the files in a folder should belong to the same package, with only one exception: a test file can belong to a `_test` package. For example, suppose the following counter.go source file belongs to the `counter` package:
 
@@ -411,7 +409,7 @@ func createCustomer(someArg string) (Customer, error) {
 }
 ```
 
-❶ Creates a customer and checks for errors
+❶ Creates a customer and checks for errors\
 \
 We create a customer using the `createCustomer` utility function, and then we perform the rest of the test. However, in the context of testing functions, we can simplify error management by passing the `*testing.T` variable to the utility function:
 
@@ -430,17 +428,17 @@ func createCustomer(t *testing.T, someArg string) Customer {
 }
 ```
 
-❶ Calls the utility function and provides t
+❶ Calls the utility function and provides t\
 \
-❷ Fails the test directly if we can’t create a customer
+❷ Fails the test directly if we can’t create a customer\
 \
-Instead of returning an error, `createCustomer` fails the test directly if it can’t create a `Customer`. This makes `TestCustomer` smaller to write and easier to read.
+Instead of returning an error, `createCustomer` fails the test directly if it can’t create a `Customer`. This makes `TestCustomer` smaller to write and easier to read.\
 \
 Let’s remember this practice regarding error management and testing to improve our tests.
 
 ### Setup and teardown
 
-In some cases, we may have to prepare a testing environment. For example, in integration tests, we spin up a specific Docker container and then stop it. We can call setup and teardown functions per test or per package. Fortunately, in Go, both are possible.
+In some cases, we may have to prepare a testing environment. For example, in integration tests, we spin up a specific Docker container and then stop it. We can call setup and teardown functions per test or per package. Fortunately, in Go, both are possible.\
 \
 To do so per test, we can call the setup function as a preaction and the teardown function using `defer`:
 
@@ -474,11 +472,11 @@ func createConnection(t *testing.T, dsn string) *sql.DB {
 }
 ```
 
-❶ Registers a function to be executed at the end of the test
-
-At the end of the test, the closure provided to `t.Cleanup` is executed. This makes future unit tests easier to write because they won’t be responsible for closing the `db` variable.
+❶ Registers a function to be executed at the end of the test\
 \
-Note that we can register multiple cleanup functions. In that case, they will be executed just as if we were using `defer`: last in, first out.
+At the end of the test, the closure provided to `t.Cleanup` is executed. This makes future unit tests easier to write because they won’t be responsible for closing the `db` variable.\
+\
+Note that we can register multiple cleanup functions. In that case, they will be executed just as if we were using `defer`: last in, first out.\
 \
 To handle setup and teardown per package, we have to use the `TestMain` function. A simple implementation of `TestMain` is the following:
 
@@ -499,12 +497,12 @@ func TestMain(m *testing.M) {
 }
 ```
 
-❶ Sets up MySQL
+❶ Sets up MySQL\
 \
-❷ Runs the tests
+❷ Runs the tests\
 \
-❸ Tears down MySQL
+❸ Tears down MySQL\
 \
-This code spins up MySQL once before all the tests and then tears it down.
+This code spins up MySQL once before all the tests and then tears it down.\
 \
 Using these practices to add setup and teardown functions, we can configure a complex environment for our tests.
