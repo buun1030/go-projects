@@ -11,7 +11,9 @@ after prcess the inner block, the outer block variable will stay the same.\
 
 Because it was difficult to distinguish the expected execution flow because of the nested if/else statements. Conversely, if only one nested if/else statment, it requires scanning down one column to see the expected execution flow and down the second column to see how the edge cases are handled.\
 \
-![This is an alt text.](![Alt text](image-1.png) "To understand the expected execution flow, we just have to scan the happy path column.")\
+![Alt text](image-1.png)\
+\
+Figure: To understand the expected execution flow, we just have to scan the happy path column.\
 \
 **Solution:** Striving to reduce the number of nested blocks, aligning the happy path on the left, and returning as early as possible are concrete means to improve our code’s readability.
 
