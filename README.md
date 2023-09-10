@@ -13,7 +13,7 @@ Because it was difficult to distinguish the expected execution flow because of t
 \
 ![Alt text](image-1.png)\
 \
-Figure: To understand the expected execution flow, we just have to scan the happy path column.\
+To understand the expected execution flow, we just have to scan the happy path column.\
 \
 **Solution:** Striving to reduce the number of nested blocks, aligning the happy path on the left, and returning as early as possible are concrete means to improve our code’s readability.
 
@@ -137,7 +137,7 @@ Figure shows an example with a maximum of five connections. It has four ongoing 
 \
 ![Alt text](image.png)\
 \
-Figure: A connection pool with five connections\
+A connection pool with five connections\
 \
 So, why should we tweak these config parameters?
 
@@ -177,6 +177,153 @@ We prepare the statement and then execute it while providing the arguments. The 
 **NOTE** The Prepare and Query methods have alternatives to provide an additional context: PrepareContext and QueryContext.\
 \
 For efficiency and security, we need to remember to use prepared statements when it makes sense.
+
+### Mishandling null values
+
+The next mistake is to mishandle null values with queries. Let’s write an example where we retrieve the department and age of an employee:
+
+```
+rows, err := db.Query("SELECT DEP, AGE FROM EMP WHERE ID = ?", id)    ❶
+if err != nil {
+    return err
+}
+// Defer closing rows
+ 
+var (
+    department string
+    age int
+)
+for rows.Next() {
+    err := rows.Scan(&department, &age)                               ❷
+    if err != nil {
+        return err
+    }
+    // ...
+}
+```
+
+❶ Executes the query\
+\
+❷ Scans each row\
+\
+We use Query to execute a query. Then, we iterate over the rows and use Scan to copy the column into the values pointed to by the `department` and `age` pointers. If we run this example, we may get the following error while calling Scan:
+
+```
+2021/10/29 17:58:05 sql: Scan error on column index 0, name "DEPARTMENT":
+converting NULL to string is unsupported
+```
+
+Here, the SQL driver raises an error because the department value is equal to NULL. If a column can be nullable, there are two options to prevent Scan from returning an error.\
+\
+The first approach is to declare department as a string pointer:
+
+```
+var (
+    department *string      ❶
+    age        int
+)
+for rows.Next() {
+    err := rows.Scan(&department, &age)
+    // ...
+}
+```
+
+❶ Changing the type from string to *string\
+\
+We provide scan with the address of a pointer, not the address of a string type directly. By doing so, if the value is `NULL`, `department` will be `nil`.\
+\
+The other approach is to use one of the sql.NullXXX types, such as sql.NullString:
+
+```
+var (
+    department sql.NullString    ❶
+    age        int
+)
+for rows.Next() {
+    err := rows.Scan(&department, &age)
+    // ...
+}
+```
+
+❶ Changes the type to sql.NullString\
+\
+sql.NullString is a wrapper on top of a string. It contains two exported fields: String contains the string value, and Valid conveys whether the string isn’t NULL. The following wrappers are accessible:
+
+* `sql.NullString`
+* `sql.NullBool`
+* `sql.NullInt32`
+* `sql.NullInt64`
+* `sql.NullFloat64`
+* `sql.NullTime`
+
+Both approaches work, with `sql.NullXXX` expressing the intent more clearly, as mentioned by Russ Cox, a core Go maintainer (http://mng.bz/rJNX):
+\
+There’s no effective difference. We thought people might want to use NullString because it is so common and perhaps expresses the intent more clearly than *string. But either will work.\
+\
+So, the best practice with a nullable column is to either handle it as a pointer or use an sql.NullXXX type.
+
+### Not handling row iteration errors
+
+Another common mistake is to miss possible errors from iterating over rows. Let’s look at a function where error handling is misused:
+
+```
+func get(ctx context.Context, db *sql.DB, id string) (string, int, error) {
+    rows, err := db.QueryContext(ctx,
+        "SELECT DEP, AGE FROM EMP WHERE ID = ?", id)
+    if err != nil {                                     ❶
+        return "", 0, err
+    }
+    defer func() {
+        err := rows.Close()                             ❷
+        if err != nil {
+            log.Printf("failed to close rows: %v\n", err)
+        }
+    }()
+ 
+    var (
+        department string
+        age        int
+    )
+    for rows.Next() {
+        err := rows.Scan(&department, &age)             ❸
+        if err != nil {
+            return "", 0, err
+        }
+    }
+ 
+    return department, age, nil
+}
+```
+
+❶ Handles errors while executing the query\
+\
+❷ Handles errors while closing the rows\
+\
+❸ Handles errors while scanning a row\
+\
+In this function, we handle three errors: while executing the query, closing the rows, and scanning a row. But this isn’t enough. We have to know that the for `rows.Next()` `{}` loop can break either when there are no more rows or when an error happens while preparing the next row. Following a row iteration, we should call `rows.Err` to distinguish between the two cases:
+
+```
+func get(ctx context.Context, db *sql.DB, id string) (string, int, error) {
+    // ...
+    for rows.Next() {
+        // ...
+    }
+ 
+    if err := rows.Err(); err != nil {    ❶
+        return "", 0, err
+    }
+ 
+    return department, age, nil
+}
+```
+
+❶ Checks rows.Err to determine whether the previous loop stopped because of an error\
+\
+This is the best practice to keep in mind: because rows.Next can stop either when we have iterated over all the rows or when an error happens while preparing the next row, we should check rows.Err following the iteration.\
+\
+Let’s now discuss a frequent mistake: forgetting to close transient resources.
+
 ## Not closing transient resources
 
 ## Forgetting the return statement after replying to an HTTP request
