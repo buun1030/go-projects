@@ -27,6 +27,57 @@ To understand the expected execution flow, we just have to scan the happy path c
 
 ## Not knowing which type of receiver to use
 
+In Go, we can attach either a value or a pointer receiver to a method. With a value receiver, Go makes a copy of the value and passes it to the method. Any changes to the object remain local to the method. The original object remains unchanged.
+
+As an illustration, the following example mutates a value receiver:
+
+type customer struct {
+    balance float64
+}
+ 
+func (c customer) add(v float64) {              ❶
+    c.balance += v
+}
+ 
+func main() {
+    c := customer{balance: 100.}
+    c.add(50.)
+    fmt.Printf("balance: %.2f\n", c.balance)    ❷
+}
+❶ Value receiver
+
+❷ The customer balance remains unchanged.
+
+Because we use a value receiver, incrementing the balance in the add method doesn’t mutate the balance field of the original customer struct:
+
+100.00
+On the other hand, with a pointer receiver, Go passes the address of an object to the method. Intrinsically, it remains a copy, but we only copy a pointer, not the object itself (passing by reference doesn’t exist in Go). Any modifications to the receiver are done on the original object. Here is the same example, but now the receiver is a pointer:
+
+type customer struct {
+    balance float64
+}
+ 
+func (c *customer) add(operation float64) {    ❶
+    c.balance += operation
+}
+ 
+func main() {
+    c := customer{balance: 100.0}
+    c.add(50.0)
+    fmt.Printf("balance: %.2f\n", c.balance)   ❷
+}
+❶ Pointer receiver
+
+❷ The customer balance is updated.
+
+Because we use a pointer receiver, incrementing the balance mutates the balance field of the original customer struct:
+
+```
+150.00
+```
+
+Choosing between value and pointer receivers isn’t always straightforward. Let’s discuss some of the conditions to help us choose.
+
 ### A receiver must be a pointer
 
 * If the method needs to mutate the receiver. This rule is also valid if the receiver is a slice and a method needs to append elements.
